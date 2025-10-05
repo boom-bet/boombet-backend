@@ -8,17 +8,31 @@ import java.time.OffsetDateTime;
 @Table(name = "events")
 @Data
 public class Event {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "event_id")
     private Long eventId;
 
     @ManyToOne
     @JoinColumn(name = "sport_id", nullable = false)
     private Sport sport;
 
-    private String team_a;
-    private String team_b;
-    private OffsetDateTime start_time;
+    @Column(name = "team_a")
+    private String teamA;
+
+    @Column(name = "team_b")
+    private String teamB;
+
+    @Column(name = "start_time")
+    private OffsetDateTime startTime;
+    
+    @Column(name = "status")
     private String status;
+    
+    @Column(name = "result")
     private String result;
+
+    @Column(name = "external_id", unique = true)
+    private String externalId;
 }
