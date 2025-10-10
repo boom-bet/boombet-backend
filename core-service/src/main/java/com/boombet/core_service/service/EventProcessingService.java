@@ -5,7 +5,6 @@ import com.boombet.core_service.model.Event;
 import com.boombet.core_service.model.Market;
 import com.boombet.core_service.model.Outcome;
 import com.boombet.core_service.repository.*;
-import com.boombet.core_service.service.BetService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,13 +14,12 @@ public class EventProcessingService {
     @Autowired private EventRepository eventRepository;
     @Autowired private MarketRepository marketRepository;
     @Autowired private OutcomeRepository outcomeRepository;
-    @Autowired private SportRepository sportRepository;
     @Autowired private BetService betService;
+    @Autowired private EventFactory eventFactory;
 
     @Transactional
     public void processMatchUpdate(MatchUpdateDTO dto) {
-        Event event = eventRepository.findByExternalId(dto.externalId())
-                .orElseGet(() -> createNewEvent(dto));
+        Event event = eventRepository.findByExternalId(dto.externalId()).orElseGet(() -> eventFactory.createEvent(dto));
 
         String internalStatus = mapExternalStatus(dto.status());
         event.setStatus(internalStatus);
@@ -54,17 +52,6 @@ public class EventProcessingService {
         if ("finished".equals(internalStatus)) {
             betService.settleBetsForEvent(event);
         }
-    }
-
-    private Event createNewEvent(MatchUpdateDTO dto) {
-        Event event = new Event();
-        event.setExternalId(dto.externalId());
-        event.setTeamA(dto.homeTeam());
-        event.setTeamB(dto.awayTeam());
-        
-        event.setSport(sportRepository.findById(1).orElseThrow()); 
-        
-        return event;
     }
 
     private String mapExternalStatus(String externalStatus) {

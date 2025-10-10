@@ -14,16 +14,31 @@ import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class BetService {
-    @Autowired private KafkaTemplate<String, String> kafkaTemplate;
-    @Autowired private UserRepository userRepository;
-    @Autowired private OutcomeRepository outcomeRepository;
-    @Autowired private BetRepository betRepository;
-    @Autowired private BetSelectionRepository betSelectionRepository;
-    @Autowired private TransactionRepository transactionRepository;
+    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final UserRepository userRepository;
+    private final OutcomeRepository outcomeRepository;
+    private final BetRepository betRepository;
+    private final BetSelectionRepository betSelectionRepository;
+    private final TransactionRepository transactionRepository;
+    private final Map<String, SettlementStrategy> settlementStrategies;
     private static final Logger log = LoggerFactory.getLogger(BetService.class);
+
+    @Autowired
+    public BetService( KafkaTemplate<String, String> kafkaTemplate, UserRepository userRepository, OutcomeRepository outcomeRepository, BetRepository betRepository, BetSelectionRepository betSelectionRepository,TransactionRepository transactionRepository, List<SettlementStrategy> strategies) {
+        this.kafkaTemplate = kafkaTemplate;
+        this.userRepository = userRepository;
+        this.outcomeRepository = outcomeRepository;
+        this.betRepository = betRepository;
+        this.betSelectionRepository = betSelectionRepository;
+        this.transactionRepository = transactionRepository;
+        this.settlementStrategies = strategies.stream().collect(Collectors.toMap(SettlementStrategy::getMarketName, Function.identity()));
+    }
 
     @Transactional
     public Bet placeBet(PlaceBetRequest request, String userEmail) {
@@ -64,12 +79,11 @@ public class BetService {
             betSelectionRepository.save(selection);
         }
 
-        Transaction transaction = new Transaction();
-        transaction.setUserId(user.getUserId());
-        transaction.setAmount(request.stakeAmount().negate());
-        transaction.setType("BET_PLACEMENT");
-        transaction.setStatus("completed");
-        transaction.setCreatedAt(OffsetDateTime.now());
+        Transaction transaction = new Transaction.Builder()
+            .userId(user.getUserId())
+            .amount(request.stakeAmount().negate())
+            .type("BET_PLACEMENT")
+            .build();
         transactionRepository.save(transaction);
 
         String notificationMessage = String.format("User %s placed a new bet with ID %d!", userEmail, savedBet.getBetId());
@@ -94,13 +108,12 @@ public class BetService {
 
             for (BetSelection selection : selections) {
                 Outcome outcome = outcomeRepository.findById(selection.getOutcomeId()).orElseThrow();
-                // TODO: Здесь нужна более сложная логика определения выигрыша.
-                // Например, если результат матча "2-1", то исход "П1" является выигрышным.
-                // Пока мы делаем очень простое предположение для примера.
-                // Например, если результат матча содержит название исхода.
-                if (!event.getResult().contains(outcome.getName())) {
-                     //isBetWon = false; // Упрощенная логика - пока закомментировано
-                     // break;
+                Market market = outcome.getMarket();
+
+                SettlementStrategy strategy = settlementStrategies.get(market.getName());
+                if (strategy == null || !strategy.isOutcomeWon(outcome, event)) {
+                    isBetWon = false;
+                    break;
                 }
             }
 

@@ -1,9 +1,9 @@
 package com.boombet.realtime_service.scheduler;
 
+import com.boombet.realtime_service.adapter.OddsAdapter;
+import com.boombet.realtime_service.client.OddsApiClient;
 import com.boombet.realtime_service.dto.MatchUpdateDTO;
-import com.boombet.realtime_service.handler.UpdateHandler;
-import com.boombet.realtime_service.parser.SportsDataParser;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.boombet.realtime_service.dto.oddsapi.OddsApiResponseDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,34 +19,29 @@ public class DataFetchScheduler {
     private static final Logger log = LoggerFactory.getLogger(DataFetchScheduler.class);
     public static final String TOPIC_EVENTS_UPDATE = "events-updates";
 
-    @Autowired private SportsDataParser parser;
-    @Autowired private UpdateHandler updateHandler;
-    @Autowired private ObjectMapper objectMapper;
+    @Autowired private OddsApiClient apiClient;
+    @Autowired private OddsAdapter adapter;
+    @Autowired private KafkaTemplate<String, MatchUpdateDTO> kafkaTemplate;
 
-    @Autowired
-    private KafkaTemplate<String, MatchUpdateDTO> kafkaTemplate;
-
-    @Scheduled(fixedRate = 60000)
-    public void fetchAndProcessMatches() {
-        log.info("Scheduler job started: Fetching live scores...");
+    @Scheduled(fixedRate = 900000)
+    public void fetchAndPublishOdds() {
+        log.info("Scheduler job started: Fetching odds from The Odds API...");
         
-        List<MatchUpdateDTO> matches = parser.fetchLiveMatches();
+        OddsApiResponseDTO[] response = apiClient.fetchUpcomingFootballOdds();
 
-        if (!matches.isEmpty()) {
-            log.info("Publishing {} match updates to Kafka topic '{}'...", matches.size(), TOPIC_EVENTS_UPDATE);
+        if (response != null && response.length > 0) {
+            List<MatchUpdateDTO> matchUpdates = adapter.toMatchUpdateDTOs(response);
+
+            log.info("Publishing {} match updates to Kafka...", matchUpdates.size());
             
-            for (MatchUpdateDTO match : matches) {
-                kafkaTemplate.send(TOPIC_EVENTS_UPDATE, match.externalId(), match);
-            }
-            
-            try {
-                String websocketMessage = objectMapper.writeValueAsString(matches);
-                updateHandler.broadcast(websocketMessage);
-            } catch (Exception e) {
-                log.error("Could not serialize matches to JSON for WebSocket", e);
-            }
+            matchUpdates.forEach(dto -> {
+                try {
+                    kafkaTemplate.send(TOPIC_EVENTS_UPDATE, dto.externalId(), dto);
+                } catch (Exception e) {
+                    log.error("Failed to send match update to Kafka for externalId {}", dto.externalId(), e);
+                }
+            });
         }
-        
         log.info("Scheduler job finished.");
     }
 }
