@@ -96,14 +96,12 @@ public class BetService {
     public void settleBetsForEvent(Event event) {
         log.info("Settling bets for finished event: {}", event.getExternalId());
 
-        // 1. Находим все ставки, которые нужно рассчитать
         List<Bet> betsToSettle = betRepository.findPendingBetsByEventId(event.getEventId());
 
         for (Bet bet : betsToSettle) {
             // TODO: Проверить, все ли исходы в этой ставке относятся к завершенным событиям.
-            // Для экспресс-ставок это важно. Пока мы упрощаем и считаем, что все.
 
-            boolean isBetWon = true; // Предпологаем, что ставка выиграла
+            boolean isBetWon = true;
             List<BetSelection> selections = betSelectionRepository.findAllByBetId(bet.getBetId());
 
             for (BetSelection selection : selections) {
@@ -117,7 +115,6 @@ public class BetService {
                 }
             }
 
-            // ВРЕМЕННО: для демонстрации будем считать, что все ставки выигрывают
             if (isBetWon) {
                 log.info("Bet ID {} has WON!", bet.getBetId());
                 bet.setStatus("won");

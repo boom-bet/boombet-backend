@@ -8,9 +8,7 @@ import com.boombet.realtime_service.dto.oddsapi.OddsApiResponseDTO;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

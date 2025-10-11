@@ -8,7 +8,7 @@ import com.boombet.core_service.model.Outcome;
 public class MatchWinnerSettlementStrategy implements SettlementStrategy {
     @Override
     public boolean isOutcomeWon(Outcome outcome, Event event) {
-        String result = event.getResult(); // e.g., "2-1"
+        String result = event.getResult(); 
         String[] scores = result.split("-");
         if (scores.length < 2) return false;
         
