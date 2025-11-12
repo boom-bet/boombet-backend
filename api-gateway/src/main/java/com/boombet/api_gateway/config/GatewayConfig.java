@@ -17,11 +17,15 @@ public class GatewayConfig {
     public RouteLocator routes(RouteLocatorBuilder builder) {
         return builder.routes()
                 .route("auth-service-route", r -> r.path("/api/auth/**")
-                        .uri("http://localhost:8081"))
+                        .uri("lb://auth-service"))
                 
                 .route("core-service-route", r -> r.path("/api/v1/**")
                         .filters(f -> f.filter(filter.apply(new AuthenticationFilter.Config())))
-                        .uri("http://localhost:8082"))
+                        .uri("lb://core-service"))
+
+                .route("realtime-service-route", r -> r.path("/api/realtime/**")
+                        .filters(f -> f.filter(filter.apply(new AuthenticationFilter.Config())))
+                        .uri("lb://realtime-service"))
                 
                 .build();
     }

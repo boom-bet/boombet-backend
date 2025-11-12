@@ -99,17 +99,25 @@ public class BetService {
         List<Bet> betsToSettle = betRepository.findPendingBetsByEventId(event.getEventId());
 
         for (Bet bet : betsToSettle) {
-            // TODO: Проверить, все ли исходы в этой ставке относятся к завершенным событиям.
-
-            boolean isBetWon = true;
             List<BetSelection> selections = betSelectionRepository.findAllByBetId(bet.getBetId());
 
+            boolean allOutcomesBelongToFinishedEvents = selections.stream()
+                .map(selection -> outcomeRepository.findById(selection.getOutcomeId()).orElseThrow().getMarket().getEvent())
+                .allMatch(e -> "finished".equals(e.getStatus()));
+
+            if (!allOutcomesBelongToFinishedEvents) {
+                log.info("Bet ID {} cannot be settled yet, as some events are still ongoing.", bet.getBetId());
+                continue;
+            }
+
+            boolean isBetWon = true;
             for (BetSelection selection : selections) {
                 Outcome outcome = outcomeRepository.findById(selection.getOutcomeId()).orElseThrow();
                 Market market = outcome.getMarket();
+                Event selectionEvent = market.getEvent();
 
                 SettlementStrategy strategy = settlementStrategies.get(market.getName());
-                if (strategy == null || !strategy.isOutcomeWon(outcome, event)) {
+                if (strategy == null || !strategy.isOutcomeWon(outcome, selectionEvent)) {
                     isBetWon = false;
                     break;
                 }
