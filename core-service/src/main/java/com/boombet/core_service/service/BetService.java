@@ -131,12 +131,11 @@ public class BetService {
                 user.setBalance(user.getBalance().add(bet.getPotentialPayout()));
                 userRepository.save(user);
 
-                Transaction transaction = new Transaction();
-                transaction.setUserId(user.getUserId());
-                transaction.setAmount(bet.getPotentialPayout());
-                transaction.setType("BET_WINNING");
-                transaction.setStatus("completed");
-                transaction.setCreatedAt(OffsetDateTime.now());
+                Transaction transaction = new Transaction.Builder()
+                    .userId(user.getUserId())
+                    .amount(bet.getPotentialPayout())
+                    .type("BET_WINNING")
+                    .build();
                 transactionRepository.save(transaction);
                 
             } else {

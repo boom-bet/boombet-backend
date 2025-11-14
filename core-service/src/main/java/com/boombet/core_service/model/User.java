@@ -14,4 +14,10 @@ public class User {
     private Long userId;
     private String email;
     private BigDecimal balance;
+
+    // Explicitly adding methods to avoid Lombok issues
+    public Long getUserId() { return userId; }
+    public String getEmail() { return email; }
+    public BigDecimal getBalance() { return balance; }
+    public void setBalance(BigDecimal balance) { this.balance = balance; }
 }

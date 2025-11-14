@@ -23,4 +23,13 @@ public class Market {
     private Event event;
     @OneToMany(mappedBy = "market", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<Outcome> outcomes;
+
+    // Explicitly adding methods to avoid Lombok issues
+    public Long getMarketId() { return marketId; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public Event getEvent() { return event; }
+    public void setEvent(Event event) { this.event = event; }
+    public List<Outcome> getOutcomes() { return outcomes; }
+    public void setOutcomes(List<Outcome> outcomes) { this.outcomes = outcomes; }
 }

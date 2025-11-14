@@ -1,13 +1,14 @@
 package com.boombet.core_service.listener;
 
-import com.boombet.core_service.dto.MatchUpdateDTO;
-import com.boombet.core_service.service.EventProcessingService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
+
+import com.boombet.core_service.config.KafkaTopicConfig;
+import com.boombet.core_service.dto.MatchUpdateDTO;
+import com.boombet.core_service.service.EventProcessingService;
 
 @Service
 public class MatchUpdateListener {
@@ -17,17 +18,16 @@ public class MatchUpdateListener {
     @Autowired
     private EventProcessingService eventProcessingService;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
-    @KafkaListener(topics = "events-updates", groupId = "core-service-group")
-    public void handleMatchUpdate(String messageJson) { // Принимаем String
-        log.info("<<<< Received Raw JSON from Kafka: {}", messageJson);
+    @KafkaListener(
+            topics = KafkaTopicConfig.TOPIC_EVENTS_UPDATE,
+            containerFactory = "kafkaListenerContainerFactory"
+    )
+    public void handleMatchUpdate(MatchUpdateDTO matchUpdate) {
+        log.info("<<<< Received match update from Kafka: {}", matchUpdate.externalId());
         try {
-            MatchUpdateDTO matchUpdate = objectMapper.readValue(messageJson, MatchUpdateDTO.class);
-            
             eventProcessingService.processMatchUpdate(matchUpdate);
         } catch (Exception e) {
-            log.error("Failed to deserialize or process message: {}", e.getMessage(), e);
+            log.error("Failed to process match update {}: {}", matchUpdate.externalId(), e.getMessage(), e);
         }
     }
 }

@@ -1,76 +1,46 @@
 package com.boombet.core_service.service;
 
-import com.boombet.core_service.dto.MatchUpdateDTO;
-import com.boombet.core_service.model.Event;
-import com.boombet.core_service.model.Market;
-import com.boombet.core_service.model.Outcome;
-import com.boombet.core_service.repository.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+
+import com.boombet.core_service.dto.MatchUpdateDTO;
+import com.boombet.core_service.repository.EventRepository;
+
+import jakarta.transaction.Transactional;
 
 @Service
 public class EventProcessingService {
-    @Autowired private EventRepository eventRepository;
-    @Autowired private MarketRepository marketRepository;
-    @Autowired private OutcomeRepository outcomeRepository;
-    @Autowired private BetService betService;
-    @Autowired private EventFactory eventFactory;
 
-    @Transactional
-    public void processMatchUpdate(MatchUpdateDTO dto) {
-        Event event = eventRepository.findByExternalId(dto.externalId()).orElseGet(() -> eventFactory.createEvent(dto));
+	private static final Logger log = LoggerFactory.getLogger(EventProcessingService.class);
 
-        String internalStatus = mapExternalStatus(dto.status());
-        event.setStatus(internalStatus);
-        event.setResult(String.format("%s-%s", dto.homeScore(), dto.awayScore()));
-        eventRepository.save(event);
+	private final EventService eventService;
+	private final EventRepository eventRepository;
+	private final BetService betService;
 
-        dto.markets().forEach(marketDTO -> {
-            Market market = marketRepository.findByNameAndEvent_EventId(marketDTO.name(), event.getEventId())
-                    .orElseGet(() -> {
-                        Market newMarket = new Market();
-                        newMarket.setName(marketDTO.name());
-                        newMarket.setEvent(event);
-                        return marketRepository.save(newMarket);
-                    });
+	public EventProcessingService(EventService eventService,
+								  EventRepository eventRepository,
+								  BetService betService) {
+		this.eventService = eventService;
+		this.eventRepository = eventRepository;
+		this.betService = betService;
+	}
 
-            marketDTO.outcomes().forEach(outcomeDTO -> {
-                Outcome outcome = outcomeRepository.findByNameAndMarket_MarketId(outcomeDTO.name(), market.getMarketId())
-                        .orElseGet(() -> {
-                            Outcome newOutcome = new Outcome();
-                            newOutcome.setName(outcomeDTO.name());
-                            newOutcome.setMarket(market);
-                            newOutcome.setActive(true);
-                            return newOutcome;
-                        });
-                outcome.setCurrentOdds(outcomeDTO.odds());
-                outcomeRepository.save(outcome);
-            });
-        });
-        eventRepository.save(event);
-        if ("finished".equals(internalStatus)) {
-            betService.settleBetsForEvent(event);
-        }
-    }
+	@Transactional
+	public void processMatchUpdate(MatchUpdateDTO matchUpdate) {
+		log.info("Processing match update for externalId {}", matchUpdate.externalId());
+		eventService.createOrUpdateEvent(matchUpdate);
 
-    private String mapExternalStatus(String externalStatus) {
-        if (externalStatus == null || externalStatus.isEmpty()) {
-            return "upcoming";
-        }
-        
-        String lowerCaseStatus = externalStatus.toLowerCase();
-        
-        if (lowerCaseStatus.contains("завершен")) {
-            return "finished";
-        }
-        if (lowerCaseStatus.contains("перенесен")) {
-            return "cancelled";
-        }
-        if (lowerCaseStatus.matches(".*\\d+.*")) {
-            return "live";
-        }
+		eventRepository.findByExternalId(matchUpdate.externalId())
+				.ifPresent(event -> {
+					if (shouldSettle(matchUpdate.status())) {
+						log.info("Event {} marked as finished. Triggering bet settlement.", event.getExternalId());
+						betService.settleBetsForEvent(event);
+					}
+				});
+	}
 
-        return "upcoming";
-    }
+	private boolean shouldSettle(String status) {
+		return status != null && status.equalsIgnoreCase("finished");
+	}
 }

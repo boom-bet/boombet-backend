@@ -2,12 +2,15 @@ package com.boombet.core_service.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AccessLevel;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "transactions")
 @Data
+@NoArgsConstructor(access = AccessLevel.PRIVATE) // For JPA
 public class Transaction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -18,6 +21,13 @@ public class Transaction {
     private String type;
     private String status;
     private OffsetDateTime createdAt;
+
+    // Private setters for the builder
+    private void setUserId(Long userId) { this.userId = userId; }
+    private void setAmount(BigDecimal amount) { this.amount = amount; }
+    private void setType(String type) { this.type = type; }
+    private void setStatus(String status) { this.status = status; }
+    private void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
 
     public static class Builder {
         private Long userId;

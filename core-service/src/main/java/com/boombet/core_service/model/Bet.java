@@ -19,4 +19,8 @@ public class Bet {
     private BigDecimal potentialPayout;
     private String status;
     private OffsetDateTime createdAt;
+
+    // Explicitly adding methods to avoid Lombok issues
+    public Long getBetId() { return this.betId; }
+    public void setStatus(String status) { this.status = status; }
 }

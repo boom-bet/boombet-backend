@@ -30,4 +30,16 @@ public class Outcome {
     @JsonIgnore
     @ToString.Exclude
     private Market market;
+
+    // Explicitly adding methods to avoid Lombok issues
+    public Long getOutcomeId() { return outcomeId; }
+    public void setOutcomeId(Long outcomeId) { this.outcomeId = outcomeId; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public BigDecimal getCurrentOdds() { return currentOdds; }
+    public void setCurrentOdds(BigDecimal currentOdds) { this.currentOdds = currentOdds; }
+    public boolean isActive() { return isActive; }
+    public void setActive(boolean active) { isActive = active; }
+    public Market getMarket() { return market; }
+    public void setMarket(Market market) { this.market = market; }
 }

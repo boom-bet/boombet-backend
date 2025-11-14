@@ -28,7 +28,7 @@ services:
       - boombet-network
 
   postgres:
-    image: postgres:13
+    image: postgres:15
     container_name: postgres
     ports:
       - "5432:5432"
