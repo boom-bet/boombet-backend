@@ -1,0 +1,132 @@
+╔══════════════════════════════════════════════════════════════════╗
+║        ШПАРГАЛКА: Тестирование User Profile API                  ║
+╚══════════════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════════════
+  БЫСТРЫЙ СТАРТ (скопируйте в PowerShell)
+═══════════════════════════════════════════════════════════════════
+
+cd C:\Nikita\VUZ\boombet\boombet-backend
+docker-compose up -d
+Start-Sleep -Seconds 60
+.\test-user-profile-api.ps1
+
+═══════════════════════════════════════════════════════════════════
+  5 НОВЫХ ЭНДПОИНТОВ
+═══════════════════════════════════════════════════════════════════
+
+1. GET  /api/v1/users/profile       ← Профиль
+2. GET  /api/v1/users/balance       ← Баланс
+3. GET  /api/v1/users/transactions  ← История
+4. POST /api/v1/users/deposit       ← Пополнить
+5. POST /api/v1/users/withdraw      ← Вывести
+
+═══════════════════════════════════════════════════════════════════
+  РУЧНОЕ ТЕСТИРОВАНИЕ
+═══════════════════════════════════════════════════════════════════
+
+# Регистрация
+$r = Invoke-RestMethod -Method POST `
+  -Uri "http://localhost:8080/api/auth/register" `
+  -ContentType "application/json" `
+  -Body '{"email":"test@test.com","password":"pass123"}'
+$token = $r.token
+
+# Профиль
+Invoke-RestMethod -Method GET `
+  -Uri "http://localhost:8080/api/v1/users/profile" `
+  -Headers @{"Authorization"="Bearer $token"}
+
+# Баланс
+Invoke-RestMethod -Method GET `
+  -Uri "http://localhost:8080/api/v1/users/balance" `
+  -Headers @{"Authorization"="Bearer $token"}
+
+# Пополнить
+Invoke-RestMethod -Method POST `
+  -Uri "http://localhost:8080/api/v1/users/deposit" `
+  -Headers @{"Authorization"="Bearer $token"} `
+  -ContentType "application/json" `
+  -Body '{"amount":1000.00}'
+
+# Вывести
+Invoke-RestMethod -Method POST `
+  -Uri "http://localhost:8080/api/v1/users/withdraw" `
+  -Headers @{"Authorization"="Bearer $token"} `
+  -ContentType "application/json" `
+  -Body '{"amount":200.00}'
+
+# История
+Invoke-RestMethod -Method GET `
+  -Uri "http://localhost:8080/api/v1/users/transactions" `
+  -Headers @{"Authorization"="Bearer $token"}
+
+═══════════════════════════════════════════════════════════════════
+  ПОЛЕЗНЫЕ КОМАНДЫ
+═══════════════════════════════════════════════════════════════════
+
+# Проверить сервисы
+.\check-services.ps1
+
+# Статус контейнеров
+docker-compose ps
+
+# Логи
+docker-compose logs -f core-service
+
+# База данных
+docker exec -it postgres psql -U postgres -d boombet
+
+# В БД:
+SELECT * FROM users;
+SELECT * FROM transactions ORDER BY created_at DESC;
+\q
+
+# Перезапуск
+docker-compose restart core-service
+
+# Остановить все
+docker-compose down
+
+═══════════════════════════════════════════════════════════════════
+  ТЕСТЫ
+═══════════════════════════════════════════════════════════════════
+
+# Все тесты
+cd core-service
+.\mvnw test
+
+# Только User Profile тесты
+.\mvnw test -Dtest=UserProfileServiceTest
+.\mvnw test -Dtest=UserProfileControllerTest
+
+═══════════════════════════════════════════════════════════════════
+  ДОКУМЕНТАЦИЯ
+═══════════════════════════════════════════════════════════════════
+
+КАК_ТЕСТИРОВАТЬ.txt        ← НАЧНИТЕ С ЭТОГО!
+TESTING_GUIDE.md           ← Подробное руководство
+USER_PROFILE_API.md        ← Документация API
+QUICK_START.md             ← Быстрый старт
+ROADMAP.md                 ← Что дальше делать
+
+═══════════════════════════════════════════════════════════════════
+  РЕШЕНИЕ ПРОБЛЕМ
+═══════════════════════════════════════════════════════════════════
+
+Connection refused:
+  → docker-compose up -d; Start-Sleep 60
+
+User authentication required:
+  → Используйте токен: -Headers @{"Authorization"="Bearer $token"}
+
+Insufficient balance:
+  → Сначала пополните: POST /api/v1/users/deposit
+
+Port already in use:
+  → docker-compose down; docker-compose up -d
+
+═══════════════════════════════════════════════════════════════════
+
+✅ ВСЁ ГОТОВО! Просто запустите: .\test-user-profile-api.ps1
+

@@ -1,0 +1,485 @@
+═══════════════════════════════════════════════════════════════════════════════
+                    ДОСТУПНЫЕ ЭНДПОИНТЫ BOOMBET API
+═══════════════════════════════════════════════════════════════════════════════
+
+Базовый URL для всех запросов через API Gateway: http://localhost:8080
+
+
+═══════════════════════════════════════════════════════════════════════════════
+1. AUTH SERVICE - Аутентификация и регистрация
+═══════════════════════════════════════════════════════════════════════════════
+
+POST /api/auth/register
+────────────────────────────────────────────────────────────────────────────────
+Описание: Регистрация нового пользователя
+Body:
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+Ответ: "User registered successfully!"
+
+
+POST /api/auth/login
+────────────────────────────────────────────────────────────────────────────────
+Описание: Вход в систему
+Body:
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+Ответ:
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+
+
+═══════════════════════════════════════════════════════════════════════════════
+2. USER PROFILE - Профиль пользователя и баланс
+═══════════════════════════════════════════════════════════════════════════════
+
+Требуется заголовок: X-Authenticated-User-Email: user@example.com
+
+
+GET /api/v1/users/profile
+────────────────────────────────────────────────────────────────────────────────
+Описание: Получить профиль текущего пользователя
+Ответ:
+{
+  "userId": 1,
+  "email": "user@example.com",
+  "balance": 1000.00,
+  "createdAt": "2025-01-15T10:30:00Z"
+}
+
+
+GET /api/v1/users/balance
+────────────────────────────────────────────────────────────────────────────────
+Описание: Получить баланс пользователя
+Ответ:
+{
+  "balance": 1000.00
+}
+
+
+GET /api/v1/users/transactions
+────────────────────────────────────────────────────────────────────────────────
+Описание: Получить историю транзакций пользователя
+Ответ:
+[
+  {
+    "transactionId": 1,
+    "type": "DEPOSIT",
+    "amount": 500.00,
+    "balanceAfter": 1500.00,
+    "createdAt": "2025-01-15T10:30:00Z",
+    "description": "Balance deposit"
+  },
+  {
+    "transactionId": 2,
+    "type": "BET_PLACED",
+    "amount": -100.00,
+    "balanceAfter": 1400.00,
+    "createdAt": "2025-01-15T11:00:00Z",
+    "description": "Bet placed: #12345"
+  }
+]
+
+
+POST /api/v1/users/deposit
+────────────────────────────────────────────────────────────────────────────────
+Описание: Пополнить баланс
+Body:
+{
+  "amount": 500.00
+}
+Ответ:
+{
+  "transactionId": 1,
+  "type": "DEPOSIT",
+  "amount": 500.00,
+  "balanceAfter": 1500.00,
+  "createdAt": "2025-01-15T10:30:00Z",
+  "description": "Balance deposit"
+}
+
+
+POST /api/v1/users/withdraw
+────────────────────────────────────────────────────────────────────────────────
+Описание: Вывести средства
+Body:
+{
+  "amount": 200.00
+}
+Ответ:
+{
+  "transactionId": 2,
+  "type": "WITHDRAWAL",
+  "amount": -200.00,
+  "balanceAfter": 1300.00,
+  "createdAt": "2025-01-15T10:35:00Z",
+  "description": "Balance withdrawal"
+}
+
+
+═══════════════════════════════════════════════════════════════════════════════
+3. SPORTS - Виды спорта
+═══════════════════════════════════════════════════════════════════════════════
+
+GET /api/v1/sports
+────────────────────────────────────────────────────────────────────────────────
+Описание: Получить список всех видов спорта
+Ответ:
+[
+  {
+    "sportId": 1,
+    "name": "Football"
+  },
+  {
+    "sportId": 2,
+    "name": "Basketball"
+  },
+  {
+    "sportId": 3,
+    "name": "Tennis"
+  }
+]
+
+
+═══════════════════════════════════════════════════════════════════════════════
+4. EVENTS - События и матчи
+═══════════════════════════════════════════════════════════════════════════════
+
+GET /api/v1/events/upcoming
+────────────────────────────────────────────────────────────────────────────────
+Описание: Получить список предстоящих событий
+Ответ:
+[
+  {
+    "eventId": 1,
+    "teamA": "Arsenal",
+    "teamB": "Chelsea",
+    "startTime": "2025-01-20T15:00:00Z",
+    "status": "upcoming",
+    "sport": {
+      "sportId": 1,
+      "name": "Football"
+    }
+  }
+]
+
+
+GET /api/v1/events/{eventId}/markets
+────────────────────────────────────────────────────────────────────────────────
+Описание: Получить рынки и коэффициенты для конкретного события
+Параметры: eventId - ID события
+Ответ:
+[
+  {
+    "marketId": 1,
+    "name": "Match Winner",
+    "outcomes": [
+      {
+        "outcomeId": 1,
+        "name": "Arsenal",
+        "currentOdds": 2.50,
+        "active": true
+      },
+      {
+        "outcomeId": 2,
+        "name": "Draw",
+        "currentOdds": 3.20,
+        "active": true
+      },
+      {
+        "outcomeId": 3,
+        "name": "Chelsea",
+        "currentOdds": 2.80,
+        "active": true
+      }
+    ]
+  }
+]
+
+
+GET /api/v1/events/sport/{sportId}
+────────────────────────────────────────────────────────────────────────────────
+Описание: Получить события по виду спорта (с пагинацией)
+Параметры:
+  - sportId - ID вида спорта
+  - page (optional) - номер страницы (default: 0)
+  - size (optional) - размер страницы (default: 20)
+Ответ:
+{
+  "content": [...],
+  "totalElements": 50,
+  "totalPages": 3,
+  "size": 20,
+  "number": 0
+}
+
+
+GET /api/v1/events/status/{status}
+────────────────────────────────────────────────────────────────────────────────
+Описание: Получить события по статусу (с пагинацией)
+Параметры:
+  - status - статус события (upcoming, live, finished)
+  - page (optional) - номер страницы (default: 0)
+  - size (optional) - размер страницы (default: 20)
+
+
+GET /api/v1/events/search
+────────────────────────────────────────────────────────────────────────────────
+Описание: Поиск событий по названию команд
+Параметры:
+  - query - поисковый запрос
+  - page (optional) - номер страницы (default: 0)
+  - size (optional) - размер страницы (default: 20)
+Пример: /api/v1/events/search?query=Arsenal&page=0&size=10
+
+
+GET /api/v1/events/range
+────────────────────────────────────────────────────────────────────────────────
+Описание: Получить события за период
+Параметры:
+  - startDate - начало периода (формат: ISO 8601)
+  - endDate - конец периода (формат: ISO 8601)
+  - page (optional) - номер страницы (default: 0)
+  - size (optional) - размер страницы (default: 20)
+Пример: /api/v1/events/range?startDate=2025-01-20T00:00:00Z&endDate=2025-01-25T23:59:59Z
+
+
+POST /api/v1/events/filter
+────────────────────────────────────────────────────────────────────────────────
+Описание: Расширенная фильтрация событий
+Body:
+{
+  "sportId": 1,
+  "status": "upcoming",
+  "startDateFrom": "2025-01-20T00:00:00Z",
+  "startDateTo": "2025-01-25T23:59:59Z",
+  "page": 0,
+  "size": 20
+}
+
+
+═══════════════════════════════════════════════════════════════════════════════
+5. BETS - Ставки
+═══════════════════════════════════════════════════════════════════════════════
+
+Требуется заголовок: X-Authenticated-User-Email: user@example.com
+
+
+POST /api/v1/bets
+────────────────────────────────────────────────────────────────────────────────
+Описание: Создать новую ставку
+Body:
+{
+  "stakeAmount": 100.00,
+  "outcomeIds": [1, 2]  // ID исходов для экспресс-ставки (или один для ординара)
+}
+Ответ:
+{
+  "betId": 12345,
+  "stakeAmount": 100.00,
+  "totalOdds": 6.25,  // Произведение коэффициентов для экспресса
+  "potentialPayout": 625.00,
+  "status": "pending",
+  "placedAt": "2025-01-15T12:00:00Z",
+  "outcomes": [
+    {
+      "outcomeId": 1,
+      "name": "Arsenal",
+      "odds": 2.50,
+      "event": {
+        "eventId": 1,
+        "teamA": "Arsenal",
+        "teamB": "Chelsea"
+      }
+    }
+  ]
+}
+
+
+GET /api/v1/bets/history
+────────────────────────────────────────────────────────────────────────────────
+Описание: Получить историю всех ставок пользователя (с пагинацией)
+Параметры:
+  - page (optional) - номер страницы (default: 0)
+  - size (optional) - размер страницы (default: 20)
+Ответ:
+{
+  "content": [
+    {
+      "betId": 12345,
+      "stakeAmount": 100.00,
+      "totalOdds": 2.50,
+      "potentialPayout": 250.00,
+      "status": "pending",
+      "placedAt": "2025-01-15T12:00:00Z",
+      "settledAt": null,
+      "actualPayout": null,
+      "outcomes": [...]
+    }
+  ],
+  "totalElements": 15,
+  "totalPages": 1,
+  "size": 20,
+  "number": 0
+}
+
+
+GET /api/v1/bets/history/status/{status}
+────────────────────────────────────────────────────────────────────────────────
+Описание: Получить ставки по статусу (с пагинацией)
+Параметры:
+  - status - статус ставки (pending, won, lost, cancelled)
+  - page (optional) - номер страницы (default: 0)
+  - size (optional) - размер страницы (default: 20)
+Пример: /api/v1/bets/history/status/pending
+
+
+GET /api/v1/bets/history/range
+────────────────────────────────────────────────────────────────────────────────
+Описание: Получить ставки за период (с пагинацией)
+Параметры:
+  - startDate - начало периода (формат: ISO 8601)
+  - endDate - конец периода (формат: ISO 8601)
+  - page (optional) - номер страницы (default: 0)
+  - size (optional) - размер страницы (default: 20)
+Пример: /api/v1/bets/history/range?startDate=2025-01-01T00:00:00Z&endDate=2025-01-31T23:59:59Z
+
+
+GET /api/v1/bets/stats
+────────────────────────────────────────────────────────────────────────────────
+Описание: Получить статистику ставок пользователя
+Ответ:
+{
+  "totalBets": 25,
+  "pendingBets": 5,
+  "wonBets": 12,
+  "lostBets": 7,
+  "cancelledBets": 1,
+  "totalStaked": 2500.00,
+  "totalWon": 3200.00,
+  "totalLost": 700.00,
+  "netProfit": 500.00,
+  "winRate": 60.0,
+  "averageOdds": 2.45
+}
+
+
+GET /api/v1/bets/{betId}
+────────────────────────────────────────────────────────────────────────────────
+Описание: Получить детали конкретной ставки
+Параметры: betId - ID ставки
+Ответ:
+{
+  "betId": 12345,
+  "stakeAmount": 100.00,
+  "totalOdds": 2.50,
+  "potentialPayout": 250.00,
+  "status": "pending",
+  "placedAt": "2025-01-15T12:00:00Z",
+  "settledAt": null,
+  "actualPayout": null,
+  "outcomes": [
+    {
+      "outcomeId": 1,
+      "name": "Arsenal",
+      "odds": 2.50,
+      "result": null,
+      "event": {
+        "eventId": 1,
+        "teamA": "Arsenal",
+        "teamB": "Chelsea",
+        "startTime": "2025-01-20T15:00:00Z"
+      }
+    }
+  ]
+}
+
+
+DELETE /api/v1/bets/{betId}
+────────────────────────────────────────────────────────────────────────────────
+Описание: Отменить ставку (только pending ставки до начала события)
+Параметры: betId - ID ставки
+Ответ:
+{
+  "betId": 12345,
+  "status": "cancelled",
+  "stakeAmount": 100.00,
+  "message": "Bet cancelled, funds returned"
+}
+
+
+═══════════════════════════════════════════════════════════════════════════════
+ПРИМЕРЫ ИСПОЛЬЗОВАНИЯ
+═══════════════════════════════════════════════════════════════════════════════
+
+Полный сценарий использования:
+
+1. Регистрация пользователя:
+   POST /api/auth/register
+   Body: {"email": "user@example.com", "password": "password123"}
+
+2. Вход в систему:
+   POST /api/auth/login
+   Body: {"email": "user@example.com", "password": "password123"}
+   Получить токен
+
+3. Пополнение баланса:
+   POST /api/v1/users/deposit
+   Header: X-Authenticated-User-Email: user@example.com
+   Body: {"amount": 1000.00}
+
+4. Получить список видов спорта:
+   GET /api/v1/sports
+
+5. Получить предстоящие события:
+   GET /api/v1/events/upcoming
+
+6. Поиск конкретного события:
+   GET /api/v1/events/search?query=Arsenal
+
+7. Получить рынки и коэффициенты:
+   GET /api/v1/events/1/markets
+
+8. Создать ставку:
+   POST /api/v1/bets
+   Header: X-Authenticated-User-Email: user@example.com
+   Body: {"stakeAmount": 100.00, "outcomeIds": [1]}
+
+9. Проверить баланс:
+   GET /api/v1/users/balance
+   Header: X-Authenticated-User-Email: user@example.com
+
+10. Получить историю ставок:
+    GET /api/v1/bets/history
+    Header: X-Authenticated-User-Email: user@example.com
+
+11. Получить статистику:
+    GET /api/v1/bets/stats
+    Header: X-Authenticated-User-Email: user@example.com
+
+12. Отменить ставку:
+    DELETE /api/v1/bets/12345
+    Header: X-Authenticated-User-Email: user@example.com
+
+
+═══════════════════════════════════════════════════════════════════════════════
+ВАЖНЫЕ ЗАМЕЧАНИЯ
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Все эндпоинты доступны через API Gateway на порту 8080
+2. Для защищенных эндпоинтов требуется заголовок: X-Authenticated-User-Email
+3. Все даты/время в формате ISO 8601 (например: 2025-01-20T15:00:00Z)
+4. Пагинация: page начинается с 0, size по умолчанию 20
+5. Статусы ставок: pending, won, lost, cancelled
+6. Статусы событий: upcoming, live, finished
+7. Типы транзакций: DEPOSIT, WITHDRAWAL, BET_PLACED, BET_WON, BET_CANCELLED
+8. Ставки можно отменить только если они pending и событие еще не началось
+9. При создании экспресс-ставки коэффициенты перемножаются
+
+═══════════════════════════════════════════════════════════════════════════════
+

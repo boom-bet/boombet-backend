@@ -4,5 +4,5 @@ import java.math.BigDecimal;
 
 public record OutcomeDTO(
     String name,
-    BigDecimal odds
+    BigDecimal price
 ) {}

@@ -4,8 +4,13 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import com.boombet.core_service.dto.EventFilterRequest;
+import com.boombet.core_service.dto.EventResponse;
 import com.boombet.core_service.dto.MarketDTO;
 import com.boombet.core_service.dto.MatchUpdateDTO;
 import com.boombet.core_service.dto.OutcomeDTO;
@@ -95,5 +100,80 @@ public class EventService {
     private boolean hasScore(MatchUpdateDTO dto) {
         return dto.homeScore() != null && dto.awayScore() != null
                 && !dto.homeScore().isBlank() && !dto.awayScore().isBlank();
+    }
+
+    /**
+     * Фильтрация событий с пагинацией
+     */
+    public Page<EventResponse> filterEvents(EventFilterRequest filter) {
+        Pageable pageable = PageRequest.of(filter.getPage(), filter.getSize());
+
+        // Парсинг дат если заданы
+        OffsetDateTime startDate = null;
+        OffsetDateTime endDate = null;
+
+        if (filter.getStartDate() != null && !filter.getStartDate().isEmpty()) {
+            try {
+                startDate = OffsetDateTime.parse(filter.getStartDate());
+            } catch (Exception e) {
+                // Игнорируем невалидные даты
+            }
+        }
+
+        if (filter.getEndDate() != null && !filter.getEndDate().isEmpty()) {
+            try {
+                endDate = OffsetDateTime.parse(filter.getEndDate());
+            } catch (Exception e) {
+                // Игнорируем невалидные даты
+            }
+        }
+
+        // Применяем фильтры
+        Page<Event> events = eventRepository.findByFilters(
+            filter.getSportId(),
+            filter.getStatus(),
+            startDate,
+            endDate,
+            filter.getQuery(),
+            pageable
+        );
+
+        return events.map(EventResponse::fromEvent);
+    }
+
+    /**
+     * Получить события по спорту
+     */
+    public Page<EventResponse> getEventsBySport(Integer sportId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Event> events = eventRepository.findBySportSportIdOrderByStartTimeAsc(sportId, pageable);
+        return events.map(EventResponse::fromEvent);
+    }
+
+    /**
+     * Получить события по статусу
+     */
+    public Page<EventResponse> getEventsByStatus(String status, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Event> events = eventRepository.findByStatusOrderByStartTimeAsc(status, pageable);
+        return events.map(EventResponse::fromEvent);
+    }
+
+    /**
+     * Поиск событий по названию команд
+     */
+    public Page<EventResponse> searchEvents(String query, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Event> events = eventRepository.searchByTeams(query, pageable);
+        return events.map(EventResponse::fromEvent);
+    }
+
+    /**
+     * Получить события за период
+     */
+    public Page<EventResponse> getEventsByDateRange(OffsetDateTime startDate, OffsetDateTime endDate, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Event> events = eventRepository.findByDateRange(startDate, endDate, pageable);
+        return events.map(EventResponse::fromEvent);
     }
 }
