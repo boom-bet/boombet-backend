@@ -40,7 +40,7 @@ public class EventService {
     private SportRepository sportRepository;
 
     public List<Event> getUpcomingEvents() {
-        return eventRepository.findAllByStatus("upcoming");
+        return eventRepository.findUpcomingEvents(OffsetDateTime.now());
     }
 
     public List<Market> getMarketsByEventId(Long eventId) {
@@ -62,7 +62,15 @@ public class EventService {
         event.setExternalId(dto.externalId());
         event.setTeamA(dto.homeTeam());
         event.setTeamB(dto.awayTeam());
-        event.setStatus(dto.status());
+        
+        // Автоматический переход upcoming -> live если время события наступило
+        if ("upcoming".equals(event.getStatus()) && event.getStartTime() != null 
+                && event.getStartTime().isBefore(OffsetDateTime.now())) {
+            event.setStatus("live");
+        } else {
+            event.setStatus(dto.status());
+        }
+        
         if (hasScore(dto)) {
             event.setResult(dto.homeScore().trim() + "-" + dto.awayScore().trim());
         }
@@ -176,4 +184,18 @@ public class EventService {
         Page<Event> events = eventRepository.findByDateRange(startDate, endDate, pageable);
         return events.map(EventResponse::fromEvent);
     }
+
+    /**
+     * Завершить событие с результатом
+     */
+    @Transactional
+    public void finishEvent(Long eventId, String result) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new RuntimeException("Event not found with id: " + eventId));
+        
+        event.setStatus("finished");
+        event.setResult(result);
+        eventRepository.save(event);
+    }
 }
+

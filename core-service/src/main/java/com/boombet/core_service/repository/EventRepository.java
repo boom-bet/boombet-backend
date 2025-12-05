@@ -1,6 +1,9 @@
 package com.boombet.core_service.repository;
 
-import com.boombet.core_service.model.Event;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,13 +11,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Optional;
+import com.boombet.core_service.model.Event;
 
 @Repository
 public interface EventRepository extends JpaRepository<Event, Long> {
     List<Event> findAllByStatus(String status);
+    
+    List<Event> findByStatus(String status);
     
     Optional<Event> findByExternalId(String externalId);
 
@@ -38,6 +41,10 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     // Поиск по названиям команд
     @Query("SELECT e FROM Event e WHERE LOWER(e.teamA) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(e.teamB) LIKE LOWER(CONCAT('%', :query, '%')) ORDER BY e.startTime ASC")
     Page<Event> searchByTeams(@Param("query") String query, Pageable pageable);
+
+    // Предстоящие события (status = 'upcoming' и startTime > now)
+    @Query("SELECT e FROM Event e WHERE e.status = 'upcoming' AND e.startTime > :currentTime ORDER BY e.startTime ASC")
+    List<Event> findUpcomingEvents(@Param("currentTime") OffsetDateTime currentTime);
 
     // Комплексная фильтрация
     @Query("SELECT e FROM Event e WHERE " +

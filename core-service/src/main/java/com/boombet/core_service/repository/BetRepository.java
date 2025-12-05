@@ -1,19 +1,30 @@
 package com.boombet.core_service.repository;
 
-import com.boombet.core_service.model.Bet;
+import java.time.OffsetDateTime;
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import java.time.OffsetDateTime;
-import java.util.List;
+
+import com.boombet.core_service.model.Bet;
 
 @Repository
 public interface BetRepository extends JpaRepository<Bet, Long> {
-    @Query("SELECT DISTINCT b FROM Bet b JOIN BetSelection bs ON b.betId = bs.betId JOIN Outcome o ON bs.outcomeId = o.outcomeId WHERE o.market.event.eventId = :eventId AND b.status = 'pending'")
-    List<Bet> findPendingBetsByEventId(Long eventId);
+    @Query("SELECT DISTINCT b FROM Bet b " +
+           "LEFT JOIN b.betSelections bs " +
+           "LEFT JOIN bs.outcome o " +
+           "LEFT JOIN o.market m " +
+           "LEFT JOIN m.event e " +
+           "WHERE e.eventId = :eventId AND b.status = 'pending'")
+    List<Bet> findPendingBetsByEventId(@Param("eventId") Long eventId);
+
+    // Найти ставки по статусу и событию
+    @Query("SELECT DISTINCT b FROM Bet b JOIN b.betSelections bs WHERE bs.outcome.market.event.eventId = :eventId AND b.status = :status")
+    List<Bet> findByStatusAndEventId(@Param("status") String status, @Param("eventId") Long eventId);
 
     // Все ставки пользователя с пагинацией
     Page<Bet> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);

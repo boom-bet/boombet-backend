@@ -1,12 +1,9 @@
 package com.boombet.core_service.service;
 
-import com.boombet.core_service.dto.BetHistoryResponse;
-import com.boombet.core_service.dto.BetStatsResponse;
-import com.boombet.core_service.model.*;
-import com.boombet.core_service.repository.BetRepository;
-import com.boombet.core_service.repository.BetSelectionRepository;
-import com.boombet.core_service.repository.OutcomeRepository;
-import com.boombet.core_service.repository.UserRepository;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -14,9 +11,18 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
+import com.boombet.core_service.dto.BetHistoryResponse;
+import com.boombet.core_service.dto.BetStatsResponse;
+import com.boombet.core_service.model.Bet;
+import com.boombet.core_service.model.BetSelection;
+import com.boombet.core_service.model.Event;
+import com.boombet.core_service.model.Market;
+import com.boombet.core_service.model.Outcome;
+import com.boombet.core_service.model.User;
+import com.boombet.core_service.repository.BetRepository;
+import com.boombet.core_service.repository.BetSelectionRepository;
+import com.boombet.core_service.repository.OutcomeRepository;
+import com.boombet.core_service.repository.UserRepository;
 
 @Service
 public class BetHistoryService {
@@ -153,6 +159,11 @@ public class BetHistoryService {
 
         List<BetHistoryResponse.BetSelectionInfo> selectionInfos = selections.stream()
             .map(selection -> {
+                // Проверка на null outcome_id
+                if (selection.getOutcomeId() == null) {
+                    return null;
+                }
+                
                 Outcome outcome = outcomeRepository.findById(selection.getOutcomeId())
                     .orElse(null);
 

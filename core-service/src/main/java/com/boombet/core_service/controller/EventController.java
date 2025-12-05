@@ -17,8 +17,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.boombet.core_service.dto.EventFilterRequest;
 import com.boombet.core_service.dto.EventResponse;
+import com.boombet.core_service.dto.FinishEventRequest;
 import com.boombet.core_service.model.Event;
 import com.boombet.core_service.model.Market;
+import com.boombet.core_service.service.BetSettlementService;
 import com.boombet.core_service.service.EventService;
 
 @RestController
@@ -26,6 +28,9 @@ import com.boombet.core_service.service.EventService;
 public class EventController {
     @Autowired
     private EventService eventService;
+
+    @Autowired
+    private BetSettlementService betSettlementService;
 
     @GetMapping("/upcoming")
     public ResponseEntity<List<Event>> getUpcomingEvents() {
@@ -104,4 +109,22 @@ public class EventController {
         Page<EventResponse> events = eventService.getEventsByDateRange(startDate, endDate, page, size);
         return ResponseEntity.ok(events);
     }
+
+    /**
+     * Завершить событие и указать результат
+     * Для тестирования расчета ставок
+     */
+    @PostMapping("/{eventId}/finish")
+    public ResponseEntity<String> finishEvent(
+            @PathVariable Long eventId,
+            @RequestBody FinishEventRequest request) {
+        try {
+            eventService.finishEvent(eventId, request.getResult());
+            betSettlementService.settleBetsForEvent(eventId);
+            return ResponseEntity.ok("Event finished and bets settled");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
+        }
+    }
 }
+

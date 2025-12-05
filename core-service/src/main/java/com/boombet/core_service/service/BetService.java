@@ -1,22 +1,34 @@
 package com.boombet.core_service.service;
 
-import com.boombet.core_service.config.KafkaTopicConfig;
-import com.boombet.core_service.dto.PlaceBetRequest;
-import com.boombet.core_service.model.*;
-import com.boombet.core_service.repository.*;
-import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.stereotype.Service;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Service;
+
+import com.boombet.core_service.config.KafkaTopicConfig;
+import com.boombet.core_service.dto.PlaceBetRequest;
+import com.boombet.core_service.model.Bet;
+import com.boombet.core_service.model.BetSelection;
+import com.boombet.core_service.model.Event;
+import com.boombet.core_service.model.Market;
+import com.boombet.core_service.model.Outcome;
+import com.boombet.core_service.model.Transaction;
+import com.boombet.core_service.model.User;
+import com.boombet.core_service.repository.BetRepository;
+import com.boombet.core_service.repository.BetSelectionRepository;
+import com.boombet.core_service.repository.OutcomeRepository;
+import com.boombet.core_service.repository.TransactionRepository;
+import com.boombet.core_service.repository.UserRepository;
+
+import jakarta.transaction.Transactional;
 
 @Service
 public class BetService {
@@ -42,6 +54,9 @@ public class BetService {
 
     @Transactional
     public Bet placeBet(PlaceBetRequest request, String userEmail) {
+        log.info("Placing bet for user: {} with outcomeIds: {}, stakeAmount: {}", 
+                 userEmail, request.outcomeIds(), request.stakeAmount());
+        
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
         if (user.getBalance().compareTo(request.stakeAmount()) < 0) {
@@ -49,6 +64,7 @@ public class BetService {
         }
 
         List<Outcome> selectedOutcomes = outcomeRepository.findAllById(request.outcomeIds());
+        log.info("Found {} outcomes for bet", selectedOutcomes.size());
         if (selectedOutcomes.size() != request.outcomeIds().size()) {
             throw new IllegalArgumentException("One or more outcomes not found");
         }
@@ -74,8 +90,10 @@ public class BetService {
         for (Outcome outcome : selectedOutcomes) {
             BetSelection selection = new BetSelection();
             selection.setBetId(savedBet.getBetId());
-            selection.setOutcomeId(outcome.getOutcomeId());
+            selection.setOutcome(outcome); // Set the outcome object, not just the ID
             selection.setOddsAtPlacement(outcome.getCurrentOdds());
+            log.info("Saving BetSelection: betId={}, outcomeId={}, odds={}", 
+                     savedBet.getBetId(), outcome.getOutcomeId(), outcome.getCurrentOdds());
             betSelectionRepository.save(selection);
         }
 

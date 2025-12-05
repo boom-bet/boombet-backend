@@ -1,8 +1,11 @@
 package com.boombet.realtime_service.scheduler;
 
-import com.boombet.realtime_service.dto.MarketDTO;
-import com.boombet.realtime_service.dto.MatchUpdateDTO;
-import com.boombet.realtime_service.dto.OutcomeDTO;
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
+import java.util.UUID;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,14 +13,9 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
-import java.util.UUID;
+import com.boombet.realtime_service.dto.MarketDTO;
+import com.boombet.realtime_service.dto.MatchUpdateDTO;
+import com.boombet.realtime_service.dto.OutcomeDTO;
 
 @Component
 public class DataFetchScheduler {
@@ -29,7 +27,7 @@ public class DataFetchScheduler {
     @Autowired
     private KafkaTemplate<String, MatchUpdateDTO> kafkaTemplate;
 
-    @Scheduled(fixedRate = 15000) // 15 seconds
+    @Scheduled(fixedRate = 120000) // 2 minutes
     public void fetchAndPublishOdds() {
         log.info("Scheduler job started: Generating mock odds data...");
 
@@ -54,7 +52,8 @@ public class DataFetchScheduler {
         } while (homeTeam.equals(awayTeam));
 
         String externalId = UUID.randomUUID().toString();
-        String status = random.nextBoolean() ? "live" : "upcoming";
+        // 70% upcoming, 30% live для более реалистичного распределения
+        String status = random.nextDouble() < 0.7 ? "upcoming" : "live";
         int homeScore = status.equals("live") ? random.nextInt(5) : 0;
         int awayScore = status.equals("live") ? random.nextInt(5) : 0;
 

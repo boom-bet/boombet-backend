@@ -15,7 +15,10 @@ public class RouterValidator {
             "/api/v1/events/upcoming",
             "/api/v1/events/live",
             "/api/v1/events/status",
-            "/api/v1/events/sport"
+            "/api/v1/events/sport",
+            "/api/v1/events/filter",
+            "/api/v1/events/",
+            "/markets"
     );
 
     public Predicate<ServerHttpRequest> isSecured =
