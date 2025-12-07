@@ -16,14 +16,14 @@ public class EventProcessingService {
 
 	private final EventService eventService;
 	private final EventRepository eventRepository;
-	private final BetService betService;
+	private final BetSettlementService betSettlementService;
 
 	public EventProcessingService(EventService eventService,
 								  EventRepository eventRepository,
-								  BetService betService) {
+								  BetSettlementService betSettlementService) {
 		this.eventService = eventService;
 		this.eventRepository = eventRepository;
-		this.betService = betService;
+		this.betSettlementService = betSettlementService;
 	}
 
 	@Transactional
@@ -35,7 +35,7 @@ public class EventProcessingService {
 				.ifPresent(event -> {
 					if (shouldSettle(matchUpdate.status())) {
 						log.info("Event {} marked as finished. Triggering bet settlement.", event.getExternalId());
-						betService.settleBetsForEvent(event);
+						betSettlementService.settleBetsForEvent(event.getEventId());
 					}
 				});
 	}

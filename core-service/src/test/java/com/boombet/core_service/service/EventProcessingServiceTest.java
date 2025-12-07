@@ -27,7 +27,7 @@ class EventProcessingServiceTest {
     @Mock
     private EventRepository eventRepository;
     @Mock
-    private BetService betService;
+    private BetSettlementService betSettlementService;
 
     @InjectMocks
     private EventProcessingService eventProcessingService;
@@ -50,7 +50,7 @@ class EventProcessingServiceTest {
         eventProcessingService.processMatchUpdate(baseDto);
 
         verify(eventService).createOrUpdateEvent(baseDto);
-        verify(betService).settleBetsForEvent(event);
+        verify(betSettlementService).settleBetsForEvent(event.getEventId());
     }
 
     @Test
@@ -65,6 +65,6 @@ class EventProcessingServiceTest {
         eventProcessingService.processMatchUpdate(liveDto);
 
         verify(eventService).createOrUpdateEvent(liveDto);
-        verifyNoInteractions(betService);
+        verifyNoInteractions(betSettlementService);
     }
 }

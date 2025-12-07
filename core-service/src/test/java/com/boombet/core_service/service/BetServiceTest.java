@@ -52,22 +52,18 @@ class BetServiceTest {
     private BetSelectionRepository betSelectionRepository;
     @Mock
     private TransactionRepository transactionRepository;
-    @Mock
-    private SettlementStrategy settlementStrategy;
 
     private BetService betService;
 
     @BeforeEach
     void setUp() {
-        when(settlementStrategy.getMarketName()).thenReturn("Match Winner");
         betService = new BetService(
                 kafkaTemplate,
                 userRepository,
                 outcomeRepository,
                 betRepository,
                 betSelectionRepository,
-                transactionRepository,
-                List.of(settlementStrategy)
+                transactionRepository
         );
     }
 

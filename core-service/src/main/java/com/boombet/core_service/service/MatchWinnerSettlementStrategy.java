@@ -18,7 +18,7 @@ public class MatchWinnerSettlementStrategy implements SettlementStrategy {
             return false;
         }
 
-        String[] scores = result.split("-");
+        String[] scores = result.split(":");
         if (scores.length < 2) {
             return false;
         }

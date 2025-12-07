@@ -73,6 +73,9 @@ public class BetSettlementService {
         
         if (pendingBets == null || pendingBets.isEmpty()) {
             logger.info("No pending bets found for event {}", eventId);
+            // Даже если ставок нет, помечаем событие как settled, чтобы не обрабатывать снова
+            event.setStatus("settled");
+            eventRepository.save(event);
             return;
         }
 
@@ -141,8 +144,12 @@ public class BetSettlementService {
         // Парсинг результата
         String[] scoreParts = result.split(":");
         if (scoreParts.length != 2) {
-            logger.warn("Invalid result format for event {}: {}", event.getEventId(), result);
-            return Set.of();
+            // Попробуем разделитель "-"
+            scoreParts = result.split("-");
+            if (scoreParts.length != 2) {
+                logger.warn("Invalid result format for event {}: {}", event.getEventId(), result);
+                return Set.of();
+            }
         }
 
         int scoreA = Integer.parseInt(scoreParts[0].trim());

@@ -72,7 +72,7 @@ public class EventService {
         }
         
         if (hasScore(dto)) {
-            event.setResult(dto.homeScore().trim() + "-" + dto.awayScore().trim());
+            event.setResult(dto.homeScore().trim() + ":" + dto.awayScore().trim());
         }
         event.setSport(sport);
         if (event.getStartTime() == null) {

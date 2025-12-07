@@ -3,9 +3,6 @@ package com.boombet.core_service.service;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,8 +14,6 @@ import com.boombet.core_service.config.KafkaTopicConfig;
 import com.boombet.core_service.dto.PlaceBetRequest;
 import com.boombet.core_service.model.Bet;
 import com.boombet.core_service.model.BetSelection;
-import com.boombet.core_service.model.Event;
-import com.boombet.core_service.model.Market;
 import com.boombet.core_service.model.Outcome;
 import com.boombet.core_service.model.Transaction;
 import com.boombet.core_service.model.User;
@@ -38,18 +33,16 @@ public class BetService {
     private final BetRepository betRepository;
     private final BetSelectionRepository betSelectionRepository;
     private final TransactionRepository transactionRepository;
-    private final Map<String, SettlementStrategy> settlementStrategies;
     private static final Logger log = LoggerFactory.getLogger(BetService.class);
 
     @Autowired
-    public BetService( KafkaTemplate<String, String> kafkaTemplate, UserRepository userRepository, OutcomeRepository outcomeRepository, BetRepository betRepository, BetSelectionRepository betSelectionRepository,TransactionRepository transactionRepository, List<SettlementStrategy> strategies) {
+    public BetService( KafkaTemplate<String, String> kafkaTemplate, UserRepository userRepository, OutcomeRepository outcomeRepository, BetRepository betRepository, BetSelectionRepository betSelectionRepository,TransactionRepository transactionRepository) {
         this.kafkaTemplate = kafkaTemplate;
         this.userRepository = userRepository;
         this.outcomeRepository = outcomeRepository;
         this.betRepository = betRepository;
         this.betSelectionRepository = betSelectionRepository;
         this.transactionRepository = transactionRepository;
-        this.settlementStrategies = strategies.stream().collect(Collectors.toMap(SettlementStrategy::getMarketName, Function.identity()));
     }
 
     @Transactional
@@ -83,7 +76,7 @@ public class BetService {
         bet.setStakeAmount(request.stakeAmount());
         bet.setTotalOdds(totalOdds);
         bet.setPotentialPayout(potentialPayout);
-        bet.setStatus("pending");
+        bet.setStatus("PENDING");
         bet.setCreatedAt(OffsetDateTime.now());
         Bet savedBet = betRepository.save(bet);
 
@@ -110,57 +103,6 @@ public class BetService {
         return savedBet;
     }
 
-    @Transactional
-    public void settleBetsForEvent(Event event) {
-        log.info("Settling bets for finished event: {}", event.getExternalId());
-
-        List<Bet> betsToSettle = betRepository.findPendingBetsByEventId(event.getEventId());
-
-        for (Bet bet : betsToSettle) {
-            List<BetSelection> selections = betSelectionRepository.findAllByBetId(bet.getBetId());
-
-            boolean allOutcomesBelongToFinishedEvents = selections.stream()
-                .map(selection -> outcomeRepository.findById(selection.getOutcomeId()).orElseThrow().getMarket().getEvent())
-                .allMatch(e -> "finished".equals(e.getStatus()));
-
-            if (!allOutcomesBelongToFinishedEvents) {
-                log.info("Bet ID {} cannot be settled yet, as some events are still ongoing.", bet.getBetId());
-                continue;
-            }
-
-            boolean isBetWon = true;
-            for (BetSelection selection : selections) {
-                Outcome outcome = outcomeRepository.findById(selection.getOutcomeId()).orElseThrow();
-                Market market = outcome.getMarket();
-                Event selectionEvent = market.getEvent();
-
-                SettlementStrategy strategy = settlementStrategies.get(market.getName());
-                if (strategy == null || !strategy.isOutcomeWon(outcome, selectionEvent)) {
-                    isBetWon = false;
-                    break;
-                }
-            }
-
-            if (isBetWon) {
-                log.info("Bet ID {} has WON!", bet.getBetId());
-                bet.setStatus("won");
-                
-                User user = userRepository.findById(bet.getUserId()).orElseThrow();
-                user.setBalance(user.getBalance().add(bet.getPotentialPayout()));
-                userRepository.save(user);
-
-                Transaction transaction = new Transaction.Builder()
-                    .userId(user.getUserId())
-                    .amount(bet.getPotentialPayout())
-                    .type("BET_WINNING")
-                    .build();
-                transactionRepository.save(transaction);
-                
-            } else {
-                log.info("Bet ID {} has LOST.", bet.getBetId());
-                bet.setStatus("lost");
-            }
-            betRepository.save(bet);
-        }
-    }
+    // Deprecated: Use BetSettlementService instead
+    // public void settleBetsForEvent(Event event) { ... }
 }

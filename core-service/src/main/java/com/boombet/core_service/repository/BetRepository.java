@@ -19,7 +19,7 @@ public interface BetRepository extends JpaRepository<Bet, Long> {
            "LEFT JOIN bs.outcome o " +
            "LEFT JOIN o.market m " +
            "LEFT JOIN m.event e " +
-           "WHERE e.eventId = :eventId AND b.status = 'pending'")
+           "WHERE e.eventId = :eventId AND b.status = 'PENDING'")
     List<Bet> findPendingBetsByEventId(@Param("eventId") Long eventId);
 
     // Найти ставки по статусу и событию
