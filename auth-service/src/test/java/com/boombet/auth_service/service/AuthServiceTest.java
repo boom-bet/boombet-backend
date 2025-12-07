@@ -1,9 +1,17 @@
 package com.boombet.auth_service.service;
 
-import com.boombet.auth_service.dto.LoginRequest;
-import com.boombet.auth_service.dto.RegisterRequest;
-import com.boombet.auth_service.model.User;
-import com.boombet.auth_service.repository.UserRepository;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -15,10 +23,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import com.boombet.auth_service.dto.LoginRequest;
+import com.boombet.auth_service.dto.LoginResponse;
+import com.boombet.auth_service.dto.RegisterRequest;
+import com.boombet.auth_service.model.User;
+import com.boombet.auth_service.repository.UserRepository;
 
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("null")
@@ -70,10 +79,15 @@ class AuthServiceTest {
         when(authenticationManager.authenticate(any())).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
         when(jwtService.generateToken("test@example.com")).thenReturn("jwt-token");
+        
+        User mockUser = new User();
+        mockUser.setEmail("test@example.com");
+        mockUser.setStatus("active");
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(mockUser));
 
-        String token = authService.login(request);
+        LoginResponse response = authService.login(request);
 
-        assertEquals("jwt-token", token);
+        assertEquals("jwt-token", response.token());
         verify(authenticationManager).authenticate(any());
         verify(jwtService).generateToken("test@example.com");
     }
