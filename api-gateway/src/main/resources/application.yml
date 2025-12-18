@@ -5,5 +5,7 @@ spring:
   application:
     name: api-gateway
 
+# JWT Secret Key (Base64-encoded, 256-bit)
+# WARNING: In production, use environment variable: ${JWT_SECRET}
 jwt:
   secret: c2J+E9nU5kP8iG1vL4hQ6wX3aD7gR1mO0bA9vY0vL7eH5mK2rQ4iA3bF1gU6jZ8c2J+E9nU5kP8iG1vL4hQ6wX3aD7gR1mO=
